@@ -110,6 +110,7 @@ void OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
 
 void OnDestroy(HWND hwnd)
 {
+    DeregisterShellHookWindow(hwnd);
     MyUnloadDll(hwnd);
 }
 
