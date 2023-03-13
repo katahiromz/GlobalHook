@@ -9,6 +9,7 @@ typedef BOOL (APIENTRY *FN_EndHook)(VOID);
 
 FN_StartHook g_pStartHook = NULL;
 FN_StartHook g_pEndHook = NULL;
+BOOL bHooked = FALSE;
 
 void DebugPrintf(const char *fmt, ...)
 {
@@ -19,12 +20,14 @@ void DebugPrintf(const char *fmt, ...)
     OutputDebugStringA(buf);
     va_end(va);
 }
+#define DPRINT(fmt, ...) DebugPrintf("Line %d: " fmt, __LINE__, ## __VA_ARGS__)
 
-BOOL OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam)
+BOOL MyLoadDLL(HWND hwnd)
 {
     g_hDLL = LoadLibraryA("hookdll.dll");
     if (g_hDLL == NULL)
     {
+        DPRINT("Failed to load hookdll.dll\n");
         EndDialog(hwnd, IDABORT);
         return FALSE;
     }
@@ -33,41 +36,74 @@ BOOL OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam)
     g_pEndHook = GetProcAddress(g_hDLL, "EndHook");
     if (!g_pStartHook || !g_pEndHook)
     {
+        DPRINT("Failed to load hookdll.dll\n");
         FreeLibrary(g_hDLL);
         EndDialog(hwnd, IDABORT);
         return FALSE;
     }
 
-    DebugPrintf("hookdll.dll is loaded\n");
+    DPRINT("hookdll.dll is loaded\n");
+    return TRUE;
+}
+
+VOID MyUnloadDll(HWND hwnd)
+{
+    if (g_hDLL)
+    {
+        (*g_pEndHook)();
+        FreeLibrary(g_hDLL);
+        g_hDLL = NULL;
+        DPRINT("hookdll.dll is unloaded\n");
+    }
+    g_pStartHook = NULL;
+    g_pEndHook = NULL;
+}
+
+BOOL OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam)
+{
+    MyLoadDLL(hwnd);
     return TRUE;
 }
 
 void OnStartHook(HWND hwnd)
 {
-    DebugPrintf("OnStartHook enter\n");
+    DPRINT("OnStartHook enter\n");
 
-    // Try to hook 1000 times
-    for (INT i = 0; i < 1000; ++i)
+    // Try to hook 20 times
+    for (INT i = 0; i < 20; ++i)
     {
         BOOL ret = (*g_pStartHook)();
         if (!ret)
         {
-            DebugPrintf("Failed to StartHook\n");
+            DPRINT("Failed to StartHook\n");
             MessageBox(hwnd, TEXT("Failed to StartHook"), NULL, MB_ICONERROR);
             continue;
         }
         (*g_pEndHook)();
+
+        MyUnloadDll(hwnd);
+
+        CopyFileA("hookdll.dll", "copyed.dll", FALSE);
+        if (!DeleteFileA("hookdll.dll"))
+        {
+            DPRINT("Failed to DeleteFile\n");
+            MessageBox(hwnd, TEXT("Failed to DeleteFile"), NULL, MB_ICONERROR);
+        }
+        CopyFileA("copyed.dll", "hookdll.dll", FALSE);
+        DeleteFileA("copyed.dll");
+
+        MyLoadDLL(hwnd);
     }
 
     (*g_pStartHook)();
-    DebugPrintf("OnStartHook leave\n");
+    DPRINT("OnStartHook leave\n");
 }
 
 void OnEndHook(HWND hwnd)
 {
-    DebugPrintf("OnEndHook enter\n");
+    DPRINT("OnEndHook enter\n");
     (*g_pEndHook)();
-    DebugPrintf("OnEndHook leave\n");
+    DPRINT("OnEndHook leave\n");
 }
 
 void OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
@@ -89,15 +125,7 @@ void OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
 
 void OnDestroy(HWND hwnd)
 {
-    if (g_hDLL)
-    {
-        OnEndHook(hwnd);
-        FreeLibrary(g_hDLL);
-        g_hDLL = NULL;
-        DebugPrintf("hookdll.dll is unloaded\n");
-    }
-    g_pStartHook = NULL;
-    g_pEndHook = NULL;
+    MyUnloadDll(hwnd);
 }
 
 INT_PTR CALLBACK

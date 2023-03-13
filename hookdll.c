@@ -30,6 +30,7 @@ void DebugPrintf(const char *fmt, ...)
     OutputDebugStringA(buf);
     va_end(va);
 }
+#define DPRINT(fmt, ...) DebugPrintf("Line %d: " fmt, __LINE__, ## __VA_ARGS__)
 
 LRESULT CALLBACK
 ShellProc(
@@ -43,13 +44,13 @@ ShellProc(
     switch (nCode)
     {
     case HSHELL_ACTIVATESHELLWINDOW:
-        DebugPrintf("HSHELL_ACTIVATESHELLWINDOW: %p, %p\n", wParam, lParam);
+        DPRINT("HSHELL_ACTIVATESHELLWINDOW: %p, %p\n", wParam, lParam);
         break;
     case HSHELL_WINDOWCREATED:
-        DebugPrintf("HSHELL_WINDOWCREATED: %p, %p\n", wParam, lParam);
+        DPRINT("HSHELL_WINDOWCREATED: %p, %p\n", wParam, lParam);
         break;
     case HSHELL_WINDOWDESTROYED:
-        DebugPrintf("HSHELL_WINDOWDESTROYED: %p, %p\n", wParam, lParam);
+        DPRINT("HSHELL_WINDOWDESTROYED: %p, %p\n", wParam, lParam);
         break;
     }
 
@@ -68,34 +69,34 @@ CBTProc(
     switch (nCode)
     {
     case HCBT_ACTIVATE:
-        DebugPrintf("HCBT_ACTIVATE: %p, %p\n", wParam, lParam);
+        DPRINT("HCBT_ACTIVATE: %p, %p\n", wParam, lParam);
         break;
     case HCBT_CLICKSKIPPED:
-        DebugPrintf("HCBT_CLICKSKIPPED: %p, %p\n", wParam, lParam);
+        DPRINT("HCBT_CLICKSKIPPED: %p, %p\n", wParam, lParam);
         break;
     case HCBT_CREATEWND:
-        DebugPrintf("HCBT_CREATEWND: %p, %p\n", wParam, lParam);
+        DPRINT("HCBT_CREATEWND: %p, %p\n", wParam, lParam);
         break;
     case HCBT_DESTROYWND:
-        DebugPrintf("HCBT_DESTROYWND: %p, %p\n", wParam, lParam);
+        DPRINT("HCBT_DESTROYWND: %p, %p\n", wParam, lParam);
         break;
     case HCBT_KEYSKIPPED:
-        DebugPrintf("HCBT_KEYSKIPPED: %p, %p\n", wParam, lParam);
+        DPRINT("HCBT_KEYSKIPPED: %p, %p\n", wParam, lParam);
         break;
     case HCBT_MINMAX:
-        DebugPrintf("HCBT_MINMAX: %p, %p\n", wParam, lParam);
+        DPRINT("HCBT_MINMAX: %p, %p\n", wParam, lParam);
         break;
     case HCBT_MOVESIZE:
-        DebugPrintf("HCBT_MOVESIZE: %p, %p\n", wParam, lParam);
+        DPRINT("HCBT_MOVESIZE: %p, %p\n", wParam, lParam);
         break;
     case HCBT_QS:
-        DebugPrintf("HCBT_QS: %p, %p\n", wParam, lParam);
+        DPRINT("HCBT_QS: %p, %p\n", wParam, lParam);
         break;
     case HCBT_SETFOCUS:
-        DebugPrintf("HCBT_SETFOCUS: %p, %p\n", wParam, lParam);
+        DPRINT("HCBT_SETFOCUS: %p, %p\n", wParam, lParam);
         break;
     case HCBT_SYSCOMMAND:
-        DebugPrintf("HCBT_SYSCOMMAND: %p, %p\n", wParam, lParam);
+        DPRINT("HCBT_SYSCOMMAND: %p, %p\n", wParam, lParam);
         break;
     }
 
@@ -106,9 +107,9 @@ BOOL APIENTRY EndHook(VOID)
 {
     BOOL ret = TRUE;
 
-    if (!UnhookWindowsHookEx(g_hShellHook))
+    if (g_hShellHook && !UnhookWindowsHookEx(g_hShellHook))
         ret = FALSE;
-    if (!UnhookWindowsHookEx(g_hCBTHook))
+    if (g_hCBTHook && !UnhookWindowsHookEx(g_hCBTHook))
         ret = FALSE;
 
     g_hShellHook = g_hCBTHook = NULL;
@@ -139,11 +140,11 @@ DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
     case DLL_PROCESS_ATTACH:
         g_hinstDLL = hinstDLL;
         DisableThreadLibraryCalls(hinstDLL);
-        DebugPrintf("DLL_PROCESS_ATTACH: %p\n", hinstDLL);
+        DPRINT("DLL_PROCESS_ATTACH: %p\n", hinstDLL);
         break;
 
     case DLL_PROCESS_DETACH:
-        DebugPrintf("DLL_PROCESS_DETACH\n");
+        DPRINT("DLL_PROCESS_DETACH\n");
         break;
     }
     return TRUE;
