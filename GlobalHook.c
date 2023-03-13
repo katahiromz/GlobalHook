@@ -4,12 +4,13 @@
 
 HINSTANCE g_hDLL = NULL;
 
-typedef BOOL (APIENTRY *FN_StartHook)(VOID);
-typedef BOOL (APIENTRY *FN_EndHook)(VOID);
+typedef BOOL (APIENTRY *FN_StartHook)(HWND hwnd);
+typedef BOOL (APIENTRY *FN_EndHook)(HWND hwnd);
 
 FN_StartHook g_pStartHook = NULL;
 FN_StartHook g_pEndHook = NULL;
 BOOL bHooked = FALSE;
+UINT g_WM_SHELLHOOK = 0;
 
 void DebugPrintf(const char *fmt, ...)
 {
@@ -50,7 +51,7 @@ VOID MyUnloadDll(HWND hwnd)
 {
     if (g_hDLL)
     {
-        g_pEndHook();
+        g_pEndHook(hwnd);
         FreeLibrary(g_hDLL);
         g_hDLL = NULL;
         DPRINT("hookdll.dll is unloaded\n");
@@ -62,6 +63,11 @@ VOID MyUnloadDll(HWND hwnd)
 BOOL OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam)
 {
     MyLoadDLL(hwnd);
+
+    RegisterShellHookWindow(hwnd);
+
+    g_WM_SHELLHOOK = RegisterWindowMessage(TEXT("SHELLHOOK"));
+
     return TRUE;
 }
 
@@ -69,7 +75,7 @@ void OnStartHook(HWND hwnd)
 {
     DPRINT("OnStartHook enter\n");
 
-    if (!g_pStartHook())
+    if (!g_pStartHook(hwnd))
     {
         DPRINT("Failed to StartHook\n");
         MessageBox(hwnd, TEXT("Failed to StartHook"), NULL, MB_ICONERROR);
@@ -81,7 +87,7 @@ void OnStartHook(HWND hwnd)
 void OnEndHook(HWND hwnd)
 {
     DPRINT("OnEndHook enter\n");
-    g_pEndHook();
+    g_pEndHook(hwnd);
     DPRINT("OnEndHook leave\n");
 }
 
@@ -115,6 +121,12 @@ DialogProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         HANDLE_MSG(hwnd, WM_INITDIALOG, OnInitDialog);
         HANDLE_MSG(hwnd, WM_COMMAND, OnCommand);
         HANDLE_MSG(hwnd, WM_DESTROY, OnDestroy);
+    default:
+        if (g_WM_SHELLHOOK && g_WM_SHELLHOOK == uMsg)
+        {
+            DPRINT("WM_SHELLHOOKMESSAGE: %p, %p\n", wParam, lParam);
+        }
+        break;
     }
     return 0;
 }

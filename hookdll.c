@@ -46,6 +46,12 @@ ShellProc(
     case HSHELL_ACTIVATESHELLWINDOW:
         DPRINT("HSHELL_ACTIVATESHELLWINDOW: %p, %p\n", wParam, lParam);
         break;
+    case HSHELL_LANGUAGE:
+        DPRINT("HSHELL_LANGUAGE: %p, %p\n", wParam, lParam);
+        break;
+    case HSHELL_WINDOWACTIVATED:
+        DPRINT("HSHELL_WINDOWACTIVATED: %p, %p\n", wParam, lParam);
+        break;
     case HSHELL_WINDOWCREATED:
         DPRINT("HSHELL_WINDOWCREATED: %p, %p\n", wParam, lParam);
         break;
@@ -103,7 +109,7 @@ CBTProc(
     return CallNextHookEx(g_hCBTHook, nCode, wParam, lParam);
 }
 
-BOOL APIENTRY EndHook(VOID)
+BOOL APIENTRY EndHook(HWND hwnd)
 {
     BOOL ret = TRUE;
 
@@ -116,16 +122,16 @@ BOOL APIENTRY EndHook(VOID)
     return ret;
 }
 
-BOOL APIENTRY StartHook(VOID)
+BOOL APIENTRY StartHook(HWND hwnd)
 {
     if (g_hShellHook || g_hCBTHook)
-        EndHook();
+        EndHook(hwnd);
 
     g_hShellHook = SetWindowsHookEx(WH_SHELL, ShellProc, g_hinstDLL, 0);
     g_hCBTHook = SetWindowsHookEx(WH_SHELL, CBTProc, g_hinstDLL, 0);
     if (!g_hShellHook || !g_hCBTHook)
     {
-        EndHook();
+        EndHook(hwnd);
         return FALSE;
     }
 
