@@ -125,7 +125,25 @@ DialogProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     default:
         if (g_WM_SHELLHOOK && g_WM_SHELLHOOK == uMsg)
         {
-            DPRINT("WM_SHELLHOOKMESSAGE: %p, %p\n", wParam, lParam);
+            DPRINT("WM_SHELLHOOK: %p, %p\n", wParam, lParam);
+            switch (wParam & 0xFF)
+            {
+            case HSHELL_ACTIVATESHELLWINDOW:
+                DPRINT("HSHELL_ACTIVATESHELLWINDOW: %p\n", lParam);
+                break;
+            case HSHELL_LANGUAGE:
+                DPRINT("HSHELL_LANGUAGE: %p\n", lParam);
+                break;
+            case HSHELL_WINDOWACTIVATED:
+                DPRINT("HSHELL_WINDOWACTIVATED: %p\n", lParam);
+                break;
+            case HSHELL_WINDOWCREATED:
+                DPRINT("HSHELL_WINDOWCREATED: %p\n", lParam);
+                break;
+            case HSHELL_WINDOWDESTROYED:
+                DPRINT("HSHELL_WINDOWDESTROYED: %p\n", lParam);
+                break;
+            }
         }
         break;
     }
