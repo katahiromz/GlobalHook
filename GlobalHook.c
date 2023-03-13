@@ -20,7 +20,7 @@ void DebugPrintf(const char *fmt, ...)
     OutputDebugStringA(buf);
     va_end(va);
 }
-#define DPRINT(fmt, ...) DebugPrintf("Line %d: " fmt, __LINE__, ## __VA_ARGS__)
+#define DPRINT(fmt, ...) DebugPrintf("%s: Line %d: " fmt, __FILE__, __LINE__, ## __VA_ARGS__)
 
 BOOL MyLoadDLL(HWND hwnd)
 {
@@ -50,7 +50,7 @@ VOID MyUnloadDll(HWND hwnd)
 {
     if (g_hDLL)
     {
-        (*g_pEndHook)();
+        g_pEndHook();
         FreeLibrary(g_hDLL);
         g_hDLL = NULL;
         DPRINT("hookdll.dll is unloaded\n");
@@ -69,40 +69,19 @@ void OnStartHook(HWND hwnd)
 {
     DPRINT("OnStartHook enter\n");
 
-    // Try to hook 20 times
-    for (INT i = 0; i < 20; ++i)
+    if (!g_pStartHook())
     {
-        BOOL ret = (*g_pStartHook)();
-        if (!ret)
-        {
-            DPRINT("Failed to StartHook\n");
-            MessageBox(hwnd, TEXT("Failed to StartHook"), NULL, MB_ICONERROR);
-            continue;
-        }
-        (*g_pEndHook)();
-
-        MyUnloadDll(hwnd);
-
-        CopyFileA("hookdll.dll", "copyed.dll", FALSE);
-        if (!DeleteFileA("hookdll.dll"))
-        {
-            DPRINT("Failed to DeleteFile\n");
-            MessageBox(hwnd, TEXT("Failed to DeleteFile"), NULL, MB_ICONERROR);
-        }
-        CopyFileA("copyed.dll", "hookdll.dll", FALSE);
-        DeleteFileA("copyed.dll");
-
-        MyLoadDLL(hwnd);
+        DPRINT("Failed to StartHook\n");
+        MessageBox(hwnd, TEXT("Failed to StartHook"), NULL, MB_ICONERROR);
     }
 
-    (*g_pStartHook)();
     DPRINT("OnStartHook leave\n");
 }
 
 void OnEndHook(HWND hwnd)
 {
     DPRINT("OnEndHook enter\n");
-    (*g_pEndHook)();
+    g_pEndHook();
     DPRINT("OnEndHook leave\n");
 }
 

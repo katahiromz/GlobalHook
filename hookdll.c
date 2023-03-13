@@ -30,7 +30,7 @@ void DebugPrintf(const char *fmt, ...)
     OutputDebugStringA(buf);
     va_end(va);
 }
-#define DPRINT(fmt, ...) DebugPrintf("Line %d: " fmt, __LINE__, ## __VA_ARGS__)
+#define DPRINT(fmt, ...) DebugPrintf("%s: Line %d: " fmt, __FILE__, __LINE__, ## __VA_ARGS__)
 
 LRESULT CALLBACK
 ShellProc(
